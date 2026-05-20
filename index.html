@@ -69,7 +69,7 @@
         #killfeed { top: 30px; right: 30px; width: 300px; display: flex; flex-direction: column; align-items: flex-end; }
         .kill-entry { background: rgba(20, 24, 30, 0.9); color: #fff; border-right: 4px solid #ff4444; padding: 6px 15px; margin-bottom: 6px; border-radius: 4px; font-size: 12px; font-weight: bold; animation: fadeOut 4s forwards; }
 
-        /* TAB Scoreboard Overlay */
+        /* LIVE IN-GAME TAB LEADERBOARD OVERLAY PANEL */
         #scoreboard-tab-overlay {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 580px; background: rgba(20, 24, 32, 0.92); border: 2px solid #de9b35;
@@ -86,7 +86,7 @@
         .sb-col-name { width: 250px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .sb-col-stat { width: 80px; text-align: center; }
 
-        /* Dynamic Outlined Hipfire Crosshair */
+        /* Locked Fixed Crosshair Layout Styles */
         #crosshair { 
             position: absolute; top: 50%; left: 50%; 
             transform: translate(-50%, -50%); width: 50px; height: 50px; 
@@ -115,7 +115,6 @@
             background: radial-gradient(circle, transparent 28%, #000000 32%); 
             display: none; pointer-events: none; z-index: 5; 
         }
-        /* Tactical Hairlines Crossing Dead-Center Inside the Circle Scope */
         #scope-overlay::before {
             content: ''; position: absolute; top: 0; left: 50%; width: 2px; height: 100%;
             background: linear-gradient(to bottom, transparent, #ff0000 30%, #ff0000 70%, transparent);
@@ -126,7 +125,6 @@
             background: linear-gradient(to right, transparent, #ff0000 30%, #ff0000 70%, transparent);
             transform: translateY(-50%); opacity: 0.85;
         }
-        /* Precision Red Center Aiming Dot */
         .scope-center-dot {
             position: absolute; top: 50%; left: 50%; width: 4px; height: 4px;
             background-color: #ff0000; border-radius: 50%; transform: translate(-50%, -50%);
@@ -257,8 +255,8 @@
         // --- BASE CONFIGS WITH AUTENTIC FIRE RATES & SCOPES MULTIPLIERS BOUNDED ---
         const WEAPONS = {
             1: { name: 'USP-S PISTOL', maxAmmo: 12, reserve: 24, currentAmmo: 12, automatic: false, fireRate: 200, damage: 35, reloadTime: 1400, recoil: 0.006, baseBloom: 2, zoomFov: null },
-            2: { name: 'M4A1-S RIFLE', maxAmmo: 30, reserve: 90, currentAmmo: 30, automatic: true, fireRate: 100, damage: 26, reloadTime: 2400, recoil: 0.016, baseBloom: 5, zoomFov: 34 }, // 2x Optic Zoom Profile
-            3: { name: 'AWP SNIPER', maxAmmo: 5, reserve: 10, currentAmmo: 5, automatic: false, fireRate: 1450, damage: 115, reloadTime: 3600, recoil: 0.07, baseBloom: 0.5, zoomFov: 14 }  // 5x Scope Zoom Profile
+            2: { name: 'M4A1-S RIFLE', maxAmmo: 30, reserve: 90, currentAmmo: 30, automatic: true, fireRate: 100, damage: 26, reloadTime: 2400, recoil: 0.016, baseBloom: 5, zoomFov: 34 }, 
+            3: { name: 'AWP SNIPER', maxAmmo: 5, reserve: 10, currentAmmo: 5, automatic: false, fireRate: 1450, damage: 115, reloadTime: 3600, recoil: 0.07, baseBloom: 0.5, zoomFov: 14 }  
         };
 
         let state = {
@@ -374,6 +372,7 @@
         }
 
         function setupMultiplayerNetworkConnection() {
+            // FIXED OVERRIDE: FORCE ALIGNMENT WITH RE-CONFIGURED SERVER ROUTE
             const SERVER_URL = "https://cs-multiplayer-server.onrender.com"; 
             pushKillfeedLog("NETWORK", "CONNECTING TO SERVER...");
             state.socket = io(SERVER_URL);
@@ -542,7 +541,6 @@
             scene.add(gunGroup);
         }
 
-        // --- INPUT PROFILES & POINTER LOCK ASSURANCE BINDINGS ---
         function setupInputProfiles() {
             const gameCanvasElement = renderer.domElement;
 
@@ -608,7 +606,6 @@
                 if (!document.pointerLockElement || state.isPaused) return;
                 if (e.button === 0) keys.fire = true;
                 
-                // Active right-click scope logic toggle handler for zoomable weapons profiles
                 if (e.button === 2 && WEAPONS[state.activeWeapon].zoomFov !== null) {
                     toggleScopeLayer();
                 }
@@ -664,7 +661,7 @@
             
             if (state.isScoped) {
                 scopeElement.style.display = 'block';
-                dotElement.style.display = 'block'; // Triggers centralized red targeting dot
+                dotElement.style.display = 'block'; 
                 camera.fov = currentWpn.zoomFov; 
                 crosshair.style.display = 'none';
                 gunGroup.visible = false; 
