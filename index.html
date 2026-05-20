@@ -181,7 +181,7 @@
 
             <button class="btn" onclick="switchActiveUiCard('card-lobby-bots')">VS Bots Arena</button>
             <button class="btn" onclick="switchActiveUiCard('card-lobby-mp')">Multiplayer Lobbies</button>
-            <button class="btn secondary" onclick="switchActiveUiCard('card-settings')">Input Settings</button>
+            <button class="btn secondary" onclick="switchActiveUiCard('card-settings')">Settings</button>
         </div>
 
         <div class="menu-card" id="card-lobby-bots">
@@ -209,7 +209,7 @@
         <div class="menu-card" id="card-settings">
             <h1>ENGINE SETTINGS</h1>
             
-            <label>CONTROLLER INTERFACE TYPE:</label>
+            <label>CONTROL INTERFACE TYPE:</label>
             <select id="select-input-type" onchange="saveProfileConfigState()">
                 <option value="mouse" selected>MOUSE & KEYBOARD (DESKTOP)</option>
                 <option value="touch">TOUCH CONTROLS (MOBILE/TABLET)</option>
@@ -228,7 +228,7 @@
         </div>
 
         <div class="menu-card" id="card-scoreboard">
-            <h1>MATCH CONCLUDED</h1><div class="score-list" id="board-stats" style="max-height:120px;"></div>
+            <h1>MATCH CONCLUDED</h1><div class="score-list" id="board-stats" style="max-height:140px;"></div>
             <button class="btn secondary" onclick="exitMatchToMainMenu()">Return to Lobby</button>
         </div>
     </div>
@@ -273,7 +273,7 @@
             if (savedInput) { state.inputType = savedInput; document.getElementById('select-input-type').value = savedInput; }
             if (savedSens) {
                 const numSens = parseFloat(savedSens);
-                state.sensitivity = numSens * (state.inputType === 'touch' ? 0x0035 : 0.0019);
+                state.sensitivity = numSens * (state.inputType === 'touch' ? 0.0035 : 0.0019);
                 document.getElementById('slider-sens').value = numSens; document.getElementById('sens-txt').innerText = savedSens;
             }
         }
@@ -283,7 +283,6 @@
             localStorage.setItem('cs_player_name', state.playerName);
             localStorage.setItem('cs_input_type', state.inputType);
             
-            // Adjust baseline multiplier bounds based on active connection mode profiles
             const val = document.getElementById('slider-sens').value;
             state.sensitivity = parseFloat(val) * (state.inputType === 'touch' ? 0.0035 : 0.0019);
         }
@@ -309,7 +308,6 @@
             document.getElementById('menu-overlay').style.display = 'none';
             document.getElementById('hud').style.display = 'block';
 
-            // DYNAMIC INPUT INTERFACE GENERATION ROUTINE
             if (state.inputType === 'touch') {
                 document.getElementById('mobile-touch-layer').style.display = 'block';
                 document.getElementById('m-btn-pause').style.display = 'flex';
@@ -335,11 +333,9 @@
         function spawnRemotePlayerAvatar(d) { if (remotePlayers[d.id]) return; const g = new THREE.Group(); const b = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 1.75), new THREE.MeshStandardMaterial({ color: d.team === 'ct' ? 0x2e5c99 : 0xab3a2b })); b.position.y = 0.875; g.add(b); const h = new THREE.Mesh(new THREE.SphereGeometry(0.23), new THREE.MeshStandardMaterial({ color: 0xe0b296 })); h.position.y = 1.95; g.add(h); g.position.set(d.x, d.y - 0.85, d.z); scene.add(g); remotePlayers[d.id] = g; }
         function resumeMatchFromPause() { if (state.inputType === 'mouse') renderer.domElement.requestPointerLock(); else { state.isPaused = false; document.getElementById('menu-overlay').style.display = 'none'; } }
 
-        // --- ADAPTIVE CONTROL PACK DRIVER INTERFACES ---
         function setupInputProfiles() {
             const canvasElement = renderer.domElement;
 
-            // Desktop pointer lock framework tracking loop
             document.addEventListener('pointerlockchange', () => {
                 if (state.inputType !== 'mouse') return;
                 if (document.pointerLockElement === document.body || document.pointerLockElement === canvasElement) {
@@ -370,7 +366,7 @@
             window.addEventListener('mouseup', (e) => { if (e.button === 0) keys.fire = false; });
             window.addEventListener('contextmenu', e => e.preventDefault());
 
-            // ----------------------- NATIVE ON-SCREEN TOUCH ADAPTER DRIVERS -----------------------
+            // ----------------------- TOUCH CONTROLLER DETECTORS -----------------------
             const mMove = document.getElementById('touch-move-surface'), mLook = document.getElementById('touch-look-surface'), jsBase = document.getElementById('virtual-joystick-base'), jsKnob = document.getElementById('virtual-joystick-knob');
 
             mMove.addEventListener('touchstart', (e) => {
@@ -415,7 +411,7 @@
             linkTouchBtn('m-btn-jump', () => { if(isGrounded) mobileKeys.jump = true; });
             linkTouchBtn('m-btn-reload', () => executeReloadProcedure());
             linkTouchBtn('m-btn-cycle', () => { let t = state.activeWeapon + 1; if(t > 3) t = 1; switchActiveSlots(t); });
-            linkTouchBtn('m-btn-pause', () => { state.isPaused = true; document.getElementById('menu-overlay').style.display = 'flex'; switchActiveUiCard('card-pause'); });
+            linkTouchBtn('m-btn-pause', () => { state.isPaused = true; document.getElementById('scoreboard-tab-overlay').style.display = 'none'; document.getElementById('menu-overlay').style.display = 'flex'; switchActiveUiCard('card-pause'); });
             linkTouchBtn('m-btn-scores', () => { const b = document.getElementById('scoreboard-tab-overlay'); if (b.style.display === 'block') b.style.display = 'none'; else { rebuildLiveLeaderboardOverlay(); b.style.display = 'block'; } });
         }
 
@@ -502,36 +498,17 @@
             if (state.hp <= 0) { state.deaths++; if(scoreRegistryData["local"]) scoreRegistryData["local"].deaths = state.deaths; if (state.matchMode === 'bots') { state.matchActive = false; if(state.inputType === 'mouse') document.exitPointerLock(); else toggleInternalPauseState(); } else { pushKillfeedLog("SERVER", "RESPAWNED"); state.hp = 100; camera.position.copy(TEAM_SPAWNS[state.playerTeam]); updateHudDisplay(); } }
         }
 
-        function toggleInternalPauseState() { state.isPaused = true; document.getElementById('scoreboard-tab-overlay').style.display = 'none'; document.getElementById('menu-overlay').style.display = 'flex'; switchActiveUiCard('card-pause'); }
-        function updateHudDisplay() { hpDisplay.innerText = `${state.hp}`; const w = WEAPONS[state.activeWeapon]; ammoDisplay.innerText = `${w.currentAmmo} / ${w.reserve}`; if(!state.isReloading) weaponDisplay.innerText = w.name; document.getElementById('kill-count').innerText = state.kills; }
-        function pushKillfeedLog(k, t) { const f = document.getElementById('killfeed'); const r = document.createElement('div'); r.className = 'kill-entry'; r.innerText = `${k} ➔ ${t}`; f.appendChild(r); setTimeout(() => r.remove(), 4000); }
-        function onWindowResize() { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
-
-        function initGame() {
-            scene = new THREE.Scene(); scene.background = new THREE.Color(0xbadaff); scene.fog = new THREE.FogExp2(0xbadaff, 0.003);
-            camera = new THREE.PerspectiveCamera(68, window.innerWidth / window.innerHeight, 0.05, 500); camera.rotation.order = 'YXZ';
-            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.shadowMap.enabled = true;
-            document.getElementById('canvas-container').appendChild(renderer.domElement); clock = new THREE.Clock(); scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-            const sun = new THREE.DirectionalLight(0xfffaed, 1.2); sun.position.set(30, 55, 15); sun.castShadow = true; scene.add(sun);
-            buildTacticalMapGrid(); buildPolishedWeaponViewModel(); setupInputProfiles(); loadSavedConfigState(); window.addEventListener('resize', onWindowResize, false);
+        function processTimeExhaustionConclusion() {
+            state.matchActive = false; state.isPaused = false; if(state.inputType === 'mouse') document.exitPointerLock();
+            document.getElementById('hud').style.display = 'none'; document.getElementById('scoreboard-tab-overlay').style.display = 'none'; document.getElementById('mobile-touch-layer').style.display = 'none'; if (state.isScoped) toggleScopeLayer();
+            const statsBox = document.getElementById('board-stats');
+            if (state.matchMode === 'bots') { document.getElementById('board-title').innerText = "TIME EXHAUSTED"; statsBox.innerHTML = `YOUR KILLS: ${state.kills}`; highScoresBots.push({ kills: state.kills, date: new Date().toLocaleTimeString() }); highScoresBots.sort((a,b) => b.kills - a.kills).slice(0, 5); localStorage.setItem('cs_highscores_bots', JSON.stringify(highScoresBots)); } 
+            else { document.getElementById('board-title').innerText = "MATCH COMPLETED"; let boardData = Object.values(scoreRegistryData).sort((a,b) => b.kills - a.kills); statsBox.innerHTML = boardData.map((p, idx) => `#${idx+1} ${p.name} - ${p.kills} KILLS`).join('<br>'); }
+            if(state.socket) state.socket.disconnect(); switchActiveUiCard('card-scoreboard');
         }
-
-        function buildTacticalMapGrid() {
-            const floor = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), new THREE.MeshStandardMaterial({ color: 0x30323a, roughness: 0.8, flatShading: true })); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
-            const ctZone = new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 0.02, 32), new THREE.MeshBasicMaterial({ color: 0x4a90e2, transparent: true, opacity: 0.35 })); ctZone.position.set(TEAM_SPAWNS.ct.x, 0.01, TEAM_SPAWNS.ct.z); scene.add(ctZone);
-            const tZone = new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 0.02, 32), new THREE.MeshBasicMaterial({ color: 0xe2904a, transparent: true, opacity: 0.35 })); tZone.position.set(TEAM_SPAWNS.t.x, 0.01, TEAM_SPAWNS.t.z); scene.add(tZone);
-            const wallMat = new THREE.MeshStandardMaterial({ color: 0xe5dec9, roughness: 0.9 });
-            const createWall = (w, h, d, x, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat); m.position.set(x, h/2, z); m.castShadow = true; m.receiveShadow = true; scene.add(m); worldBoxes.push(m); };
-            createWall(120, 15, 2, 0, 60); createWall(120, 15, 2, 0, -60); createWall(2, 15, 120, 60, 0); createWall(2, 15, 120, -60, 0);
-            const woodCrateMat = new THREE.MeshStandardMaterial({ color: 0x96693d, roughness: 0.75 });
-            const blockPoints = [[6, 12, 15], [5, -15, 20], [6, 15, -15], [8, -20, -20], [5, 0, 10], [5, 0, -10], [6, 25, 0], [4, -25, 0]];
-            blockPoints.forEach(p => { const crate = new THREE.Mesh(new THREE.BoxGeometry(p[0], p[0], p[0]), woodCrateMat); crate.position.set(p[1], p[0]/2, p[2]); crate.castShadow = true; crate.receiveShadow = true; scene.add(crate); worldBoxes.push(crate); });
-        }
-        function buildPolishedWeaponViewModel() { gunGroup = new THREE.Group(); const r = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.07, 0.28), new THREE.MeshStandardMaterial({ color: 0x1c1e24, metalness: 0.6 })); r.position.set(0.16, -0.20, -0.32); gunGroup.add(r); const b = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.35), new THREE.MeshStandardMaterial({ color: 0x0c0d10 })); b.rotation.x = Math.PI / 2; b.position.set(0.16, -0.18, -0.6); gunGroup.add(b); scene.add(gunGroup); }
 
         function exitMatchToMainMenu() { state.matchActive = false; state.isPaused = false; if (state.isScoped) toggleScopeLayer(); activeBots.forEach(b => b.destroy(scene)); activeBots = []; ammoPacks.forEach(a => scene.remove(a.mesh)); ammoPacks = []; Object.keys(remotePlayers).forEach(id => scene.remove(remotePlayers[id])); remotePlayers = {}; document.getElementById('scoreboard-tab-overlay').style.display = 'none'; document.getElementById('mobile-touch-layer').style.display = 'none'; if(state.socket) state.socket.disconnect(); switchActiveUiCard('card-main'); }
 
-        // --- TICK RUNTIME EXECUTION LOOP ---
         function frameUpdateLoop() {
             requestAnimationFrame(frameUpdateLoop); const delta = Math.min(0.03, clock.getDelta()); const tickTime = performance.now();
             let isCurrentlyControlling = state.inputType === 'touch' ? (state.matchActive && !state.isPaused) : (document.pointerLockElement && state.matchActive && !state.isPaused);
@@ -544,7 +521,6 @@
                 const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion); fwd.y = 0; fwd.normalize();
                 const side = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion); side.y = 0; side.normalize();
 
-                // Adaptive input vector compilation selector
                 let movingUp = state.inputType === 'touch' ? mobileKeys.w : keys.w;
                 let movingDn = state.inputType === 'touch' ? mobileKeys.s : keys.s;
                 let movingRt = state.inputType === 'touch' ? mobileKeys.d : keys.d;
@@ -580,6 +556,7 @@
             }
             renderer.render(scene, camera);
         }
+
         initGame(); frameUpdateLoop();
     </script>
 </body>
